@@ -49,32 +49,40 @@ class MainActivity : AppCompatActivity() {
         getCatImageResponse()
     }
 
-    private fun getCatImageResponse(){
+    private fun getCatImageResponse() {
         val call = catApiService.searchImages(1, "full")
-        call.enqueue(object: Callback<List<ImageData>> {
+        call.enqueue(object : Callback<List<ImageData>> {
             override fun onFailure(call: Call<List<ImageData>>, t: Throwable) {
                 Log.e(MAIN_ACTIVITY, "Failed to get response", t)
             }
 
-            override fun onResponse(call: Call<List<ImageData>>, response: Response<List<ImageData>>) {
-                if(response.isSuccessful){
+            override fun onResponse(
+                call: Call<List<ImageData>>,
+                response: Response<List<ImageData>>
+            ) {
+                if (response.isSuccessful) {
                     val image = response.body()
-                    val firstImage = image?.firstOrNull()?.imageUrl.orEmpty()
-                    if (firstImage.isNotBlank()) {
-                        imageLoader.loadImage(firstImage, imageResultView)
+                    val firstImage = image?.firstOrNull()
+
+                    if (firstImage != null) {
+                        val breedName = firstImage.breeds?.firstOrNull()?.name ?: "Unknown"
+                        apiResponseView.text = breedName
+
+                        if (!firstImage.imageUrl.isNullOrBlank()) {
+                            imageLoader.loadImage(firstImage.imageUrl, imageResultView)
+                        }
                     } else {
-                        Log.d(MAIN_ACTIVITY, "Missing image URL")
+                        Log.d(MAIN_ACTIVITY, "Response body is null or empty")
+                        apiResponseView.text = "Cat not found"
                     }
-
-
-                    apiResponseView.text = getString(R.string.image_placeholder, firstImage)
-                }
-                else {
-                    Log.e(MAIN_ACTIVITY, "Failed to get response\n" + response.errorBody()?.string().orEmpty())
+                } else {
+                    Log.e(MAIN_ACTIVITY, "Response not successful: ${response.code()}")
+                    apiResponseView.text = "Error: ${response.code()}"
                 }
             }
         })
     }
+
 
     companion object {
         const val MAIN_ACTIVITY = "MAIN_ACTIVITY"
